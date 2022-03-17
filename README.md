@@ -1,9 +1,3 @@
-# Fabric Example Mod
+# NBTtooltips
 
-## Setup
-
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
-
-## License
-
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+A simple fabric Minecraft mod that adds a feature that allows you to see the custom NBT data when you hover over it and press your shift key.
