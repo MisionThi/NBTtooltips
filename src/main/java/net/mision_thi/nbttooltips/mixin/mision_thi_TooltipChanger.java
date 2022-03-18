@@ -69,6 +69,7 @@ public abstract class mision_thi_TooltipChanger {
 				// Start the loop
 				int lineStep = 50;
 				int lineLimit = 50;
+				int removedCharters = 0;
 				Boolean singleQuotationMark = Boolean.FALSE;
 				Boolean lineAdded = Boolean.FALSE;
 				String lastString = "";
@@ -140,7 +141,16 @@ public abstract class mision_thi_TooltipChanger {
 						// Colour the "
 						if (nbtList.charAt(m.start()) == '"') {
 							if (lastString.equals("\"")){
-								mutableText.append(new LiteralText(nbtList.substring(lastIndex+1,m.start())).formatted(Formatting.GREEN));
+
+								// Check if the string is way too long
+								if (m.start() - lineLimit > lineStep ){
+									mutableText.append(new LiteralText("....").formatted(Formatting.YELLOW));
+									removedCharters += m.start() - lineLimit;
+								}
+								else {
+									mutableText.append(new LiteralText(nbtList.substring(lastIndex+1,m.start())).formatted(Formatting.GREEN));
+								}
+
 								mutableText.append(new LiteralText(String.valueOf(nbtList.charAt(m.start()))).formatted(Formatting.WHITE));
 							}
 							else {
@@ -151,42 +161,30 @@ public abstract class mision_thi_TooltipChanger {
 
 						}
 					}
-					//NBTtooltipsMod.LOGGER.info(String.valueOf(m.start()));
 
-					if (m.start() >= lineLimit) {
+					// Checks if the current location is higher than the limit
+					if (m.start() - removedCharters >= lineLimit) {
 						if (nbtList.charAt(m.start()) == '}' || nbtList.charAt(m.start()) == ']' || nbtList.charAt(m.start()) == ',') {
-							//TestMod.LOGGER.info("higher then the limit and } or ] or ,");
 
 							if (lastString.equals("'")) {
 								mutableText.append(new LiteralText(nbtList.substring(lastIndex+1,m.start())).formatted(Formatting.GREEN));
 								lastIndex = m.start();
 							}
-							//System.out.println(mutableText);
+
+							// Add the text to the list
 							list.add(indexInsertLocation,mutableText);
 							indexInsertLocation += 1;
-							//System.out.println("insert: " + indexInsertLocation);
 							mutableText = new LiteralText("     ");
-
 							lineAdded = Boolean.TRUE;
 							lineLimit = lineLimit + lineStep;
 						}
 
 					}
-
-
-					//System.out.println("position "  + m.start() + ": " + nbtList.charAt(m.start()));
 				}
-
-
-
-				//mutableText.append(new TranslatableText("item.nbt_tags.fabrictestmod"));
-				//mutableText.append(new LiteralText(nbtList).formatted(Formatting.AQUA));
 
 				// Add the new element
 				if (lineAdded.equals(Boolean.FALSE)) {
 					list.add(indexInsertLocation,mutableText);
-					indexInsertLocation += 1;
-					//System.out.println("insert: " + indexInsertLocation);
 				}
 
 				// Return the list
