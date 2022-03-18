@@ -24,15 +24,13 @@ import org.lwjgl.glfw.GLFW;
 @Mixin(ItemStack.class)
 public abstract class mision_thi_TooltipChanger {
 
-	@Shadow public abstract boolean isFood();
-
 	@Shadow public abstract String toString();
 
 
 	@Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
 	protected void injectEditTooltipmethod(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<ArrayList<Text>> info) {
+		// Check if the key is pressed
 		MinecraftClient client = MinecraftClient.getInstance();
-
 		boolean isShiftPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT );
 
 		if (context.isAdvanced() && isShiftPressed == Boolean.TRUE) {
@@ -41,11 +39,18 @@ public abstract class mision_thi_TooltipChanger {
 
 			// Get the list return value
 			ArrayList<Text> list = info.getReturnValue();
+			ArrayList<Text> temp = new ArrayList<Text>();
 
 			// If it has nbt remove the last part from the list and replace it with the new part
 			if (itemStack.hasNbt()) {
+
+				temp.add((new TranslatableText("item.nbt_tags", itemStack.getNbt().getKeys().size())).formatted(Formatting.DARK_GRAY));
+				//System.out.println(list);
+				//System.out.println(list.indexOf(temp.get(0)));
+				int indexInsertLocation = list.indexOf(temp.get(0));
+
 				// Calculate index of last element
-				int index = list.size() - 1;
+				int index = indexInsertLocation;
 
 				// Delete last element by passing index
 				list.remove(index);
@@ -146,7 +151,7 @@ public abstract class mision_thi_TooltipChanger {
 
 						}
 					}
-					NBTtooltipsMod.LOGGER.info(String.valueOf(m.start()));
+					//NBTtooltipsMod.LOGGER.info(String.valueOf(m.start()));
 
 					if (m.start() >= lineLimit) {
 						if (nbtList.charAt(m.start()) == '}' || nbtList.charAt(m.start()) == ']' || nbtList.charAt(m.start()) == ',') {
@@ -157,10 +162,11 @@ public abstract class mision_thi_TooltipChanger {
 								lastIndex = m.start();
 							}
 							//System.out.println(mutableText);
-							list.add(mutableText);
+							list.add(indexInsertLocation,mutableText);
+							indexInsertLocation += 1;
+							//System.out.println("insert: " + indexInsertLocation);
 							mutableText = new LiteralText("     ");
-							//System.out.println(mutableText);
-							//System.out.println(list);
+
 							lineAdded = Boolean.TRUE;
 							lineLimit = lineLimit + lineStep;
 						}
@@ -178,7 +184,9 @@ public abstract class mision_thi_TooltipChanger {
 
 				// Add the new element
 				if (lineAdded.equals(Boolean.FALSE)) {
-					list.add(mutableText);
+					list.add(indexInsertLocation,mutableText);
+					indexInsertLocation += 1;
+					//System.out.println("insert: " + indexInsertLocation);
 				}
 
 				// Return the list
