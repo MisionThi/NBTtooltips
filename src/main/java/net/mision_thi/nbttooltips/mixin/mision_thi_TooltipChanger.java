@@ -8,7 +8,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
-import net.mision_thi.nbttooltips.NBTtooltipsMod;
+import net.mision_thi.nbttooltips.config.ModConfigs;
+import net.mision_thi.nbttooltips.tooltips.TooltipChanger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,9 +27,32 @@ public abstract class mision_thi_TooltipChanger {
 
 	@Shadow public abstract String toString();
 
-
 	@Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
 	protected void injectEditTooltipmethod(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<ArrayList<Text>> info) {
+
+		boolean isShiftPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT );
+
+		// If the advanced tooltips are on and the shift key is pressed the method is run.
+		if (context.isAdvanced() && isShiftPressed == Boolean.TRUE) {
+			// initialise the needed data
+			MinecraftClient client = MinecraftClient.getInstance();
+			ItemStack itemStack = ( ItemStack ) ( Object ) this;
+			ArrayList<Text> list = info.getReturnValue();
+
+			/*
+				Before calling the main method from the `tooltip changer` class.
+				We check if the item even has custom NBT.
+			 */
+			if (itemStack.hasNbt()) {
+				TooltipChanger tooltipMain = new TooltipChanger();
+				info.setReturnValue(tooltipMain.Main(client, itemStack, list));
+			}
+
+		}
+	}
+
+	//@Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
+	protected void tinjectEditTooltipmethod(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<ArrayList<Text>> info) {
 		// Check if the key is pressed
 		MinecraftClient client = MinecraftClient.getInstance();
 		boolean isShiftPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT );
@@ -192,5 +216,4 @@ public abstract class mision_thi_TooltipChanger {
 			}
 		}
 	}
-
 }

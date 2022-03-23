@@ -19,7 +19,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-
+      "net.mision_thi.nbttooltips.NBTtooltipsMod"
     ]
   },
   "mixins": [
