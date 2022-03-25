@@ -20,6 +20,9 @@
   "entrypoints": {
     "main": [
       "net.mision_thi.nbttooltips.NBTtooltipsMod"
+    ],
+    "client": [
+
     ]
   },
   "mixins": [

@@ -240,7 +240,7 @@ public class TooltipChanger {
         if (colour.equals("yellow")) { return Formatting.YELLOW; }
         if (colour.equals("white")) { return Formatting.WHITE; }
 
-        return null;
+        return Formatting.WHITE;
     }
 
 }
