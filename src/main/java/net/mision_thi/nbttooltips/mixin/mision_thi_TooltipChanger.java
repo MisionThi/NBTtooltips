@@ -37,8 +37,7 @@ public abstract class mision_thi_TooltipChanger {
 				We check if the item even has custom NBT.
 			 */
 			if (itemStack.hasNbt()) {
-				TooltipChanger tooltipMain = new TooltipChanger();
-				info.setReturnValue(tooltipMain.Main(client, itemStack, list));
+				info.setReturnValue(TooltipChanger.Main(client, itemStack, list));
 			}
 
 		}

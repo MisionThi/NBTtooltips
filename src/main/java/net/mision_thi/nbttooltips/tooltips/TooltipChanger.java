@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TooltipChanger {
-    public ArrayList<Text> Main(MinecraftClient client, ItemStack itemStack, ArrayList<Text> list) {
+    public static ArrayList<Text> Main(MinecraftClient client, ItemStack itemStack, ArrayList<Text> list) {
         // Initialise the needed variables
         ArrayList<Text> temp = new ArrayList<Text>();
 
