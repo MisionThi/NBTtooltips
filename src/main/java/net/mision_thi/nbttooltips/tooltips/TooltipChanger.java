@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TooltipChanger {
-    public ArrayList<Text> Main(MinecraftClient client, ItemStack itemStack, ArrayList<Text> list) {
+    public static ArrayList<Text> Main(MinecraftClient client, ItemStack itemStack, ArrayList<Text> list) {
         // Initialise the needed variables
         ArrayList<Text> temp = new ArrayList<Text>();
 
@@ -225,24 +225,24 @@ public class TooltipChanger {
 
     private static Formatting Colour(String colour) {
 
-        if (colour.equals("black")) { return Formatting.BLACK; }
-        if (colour.equals("dark_blue")) { return Formatting.DARK_BLUE; }
-        if (colour.equals("dark_green")) { return Formatting.DARK_GREEN; }
-        if (colour.equals("dark_aqua")) { return Formatting.DARK_AQUA; }
-        if (colour.equals("dark_red")) { return Formatting.DARK_RED; }
-        if (colour.equals("dark_purple")) { return Formatting.DARK_PURPLE; }
-        if (colour.equals("gold")) { return Formatting.GOLD; }
-        if (colour.equals("gray")) { return Formatting.GRAY; }
-        if (colour.equals("dark_gray")) { return Formatting.DARK_GRAY; }
-        if (colour.equals("blue")) { return Formatting.BLUE; }
-        if (colour.equals("green")) { return Formatting.GREEN; }
-        if (colour.equals("aqua")) { return Formatting.AQUA; }
-        if (colour.equals("red")) { return Formatting.RED; }
-        if (colour.equals("light_purple")) { return Formatting.LIGHT_PURPLE; }
-        if (colour.equals("yellow")) { return Formatting.YELLOW; }
-        if (colour.equals("white")) { return Formatting.WHITE; }
-
-        return Formatting.WHITE;
+        return switch (colour) {
+            case "black" -> Formatting.BLACK;
+            case "dark_blue" -> Formatting.DARK_BLUE;
+            case "dark_green" -> Formatting.DARK_GREEN;
+            case "dark_aqua" -> Formatting.DARK_AQUA;
+            case "dark_red" -> Formatting.DARK_RED;
+            case "dark_purple" -> Formatting.DARK_PURPLE;
+            case "gold" -> Formatting.GOLD;
+            case "gray" -> Formatting.GRAY;
+            case "dark_gray" -> Formatting.DARK_GRAY;
+            case "blue" -> Formatting.BLUE;
+            case "green" -> Formatting.GREEN;
+            case "aqua" -> Formatting.AQUA;
+            case "red" -> Formatting.RED;
+            case "light_purple" -> Formatting.LIGHT_PURPLE;
+            case "yellow" -> Formatting.YELLOW;
+            default -> Formatting.WHITE;
+        };
     }
 
 }

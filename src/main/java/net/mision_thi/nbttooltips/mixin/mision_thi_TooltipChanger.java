@@ -7,6 +7,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.*;
+import net.mision_thi.nbttooltips.NBTtooltipsMod;
 import net.mision_thi.nbttooltips.tooltips.TooltipChanger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,10 +24,11 @@ public abstract class mision_thi_TooltipChanger {
 	@Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
 	protected void injectEditTooltipmethod(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<ArrayList<Text>> info) {
 
-		boolean isShiftPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT );
+		int code = InputUtil.fromTranslationKey(NBTtooltipsMod.KEYBIND.getBoundKeyTranslationKey()).getCode();
+		boolean isKeybindPressed = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), code);
 
 		// If the advanced tooltips are on and the shift key is pressed the method is run.
-		if (context.isAdvanced() && isShiftPressed == Boolean.TRUE) {
+		if (context.isAdvanced() && isKeybindPressed == Boolean.TRUE) {
 			// initialise the needed data
 			MinecraftClient client = MinecraftClient.getInstance();
 			ItemStack itemStack = ( ItemStack ) ( Object ) this;
@@ -37,8 +39,7 @@ public abstract class mision_thi_TooltipChanger {
 				We check if the item even has custom NBT.
 			 */
 			if (itemStack.hasNbt()) {
-				TooltipChanger tooltipMain = new TooltipChanger();
-				info.setReturnValue(tooltipMain.Main(client, itemStack, list));
+				info.setReturnValue(TooltipChanger.Main(client, itemStack, list));
 			}
 
 		}
