@@ -2,11 +2,10 @@ package net.mision_thi.nbttooltips.tooltips;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.*;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.mision_thi.nbttooltips.config.ModConfigs;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -22,7 +21,7 @@ public class TooltipChanger {
             With that NBT text recreated, we can find the index of the text.
             After we found it we remove it and keep the index stored in the `index` variable.
         */
-        temp.add(MutableText.of(new TranslatableTextContent("item.nbt_tags", itemStack.getNbt().getKeys().size())).formatted(Formatting.DARK_GRAY));
+        temp.add(Text.translatable("item.nbt_tags", itemStack.getNbt().getKeys().size()).formatted(Formatting.DARK_GRAY));
         int index = list.indexOf(temp.get(0));
         int indexInsertLocation = list.indexOf(temp.get(0));
         list.remove(index);
@@ -36,8 +35,8 @@ public class TooltipChanger {
         Matcher m = p.matcher(nbtList);
 
         // Create new literalText, which we will be adding to the list.
-        MutableText mutableText = MutableText.of(new LiteralTextContent(""));
-        mutableText.append(MutableText.of(new TranslatableTextContent("item.nbt_tags.nbttooltips")).formatted(Formatting.DARK_GRAY));
+        MutableText mutableText = Text.empty();
+        mutableText.append(Text.translatable("item.nbt_tags.nbttooltips").formatted(Formatting.DARK_GRAY));
 
 
         /*  **Loop through the NBT data**
@@ -70,12 +69,12 @@ public class TooltipChanger {
              */
             if (nbtList.charAt(m.start()) == '\'') {
                 if (singleQuotationMark.equals(Boolean.FALSE)) { // If false color only the quotation mark
-                    mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start())))).formatted(quotationColour));
+                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
                     singleQuotationMark = Boolean.TRUE;
                 }
                 else { // Else color the quotation mark and make the rest green
-                    mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()))).formatted(stringColour));
-                    mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start())))).formatted(quotationColour));
+                    mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
+                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
                     singleQuotationMark = Boolean.FALSE;
                 }
                 lastString = String.valueOf(nbtList.charAt(m.start()));
@@ -97,7 +96,7 @@ public class TooltipChanger {
                         Stores the lastString and lastIndex
                  */
                 if (nbtList.charAt(m.start()) == '{' || nbtList.charAt(m.start()) == '[' ) {
-                    mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start())))).formatted(separationColour));
+                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(separationColour));
                     lastString = String.valueOf(nbtList.charAt(m.start()));
                     lastIndex = m.start();
                 }
@@ -117,17 +116,17 @@ public class TooltipChanger {
                             nbtList.charAt(m.start()-1) == 'l' || nbtList.charAt(m.start()-1) == 'L' ||
                             nbtList.charAt(m.start()-1) == 'f' || nbtList.charAt(m.start()-1) == 'F'
                     ) {
-                        mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()-1))).formatted(integerColour));
-                        mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(m.start()-1,m.start()))).formatted(typeColour));
+                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start()-1)).formatted(integerColour));
+                        mutableText.append(Text.literal(nbtList.substring(m.start()-1,m.start())).formatted(typeColour));
 
                     }
                     else {
-                        mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()))).formatted(integerColour));
+                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(integerColour));
                     }
 
-                    mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start()))))).formatted(separationColour);
+                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start())))).formatted(separationColour);
 
-                    if (nbtList.charAt(m.start()) == ',') { mutableText.append(MutableText.of(new LiteralTextContent(" ")).formatted(separationColour)); }
+                    if (nbtList.charAt(m.start()) == ',') { mutableText.append(Text.literal(" ").formatted(separationColour)); }
                     lastString = String.valueOf(nbtList.charAt(m.start()));
                     lastIndex = m.start();
                 }
@@ -142,10 +141,10 @@ public class TooltipChanger {
                  */
                 if (nbtList.charAt(m.start()) == ':') { // 4).
                     if (!lastString.equals("\"")) {
-                        mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()))).formatted(fieldColour));
+                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(fieldColour));
 
-                        mutableText.append((MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start()))))).formatted(separationColour));
-                        mutableText.append(MutableText.of(new LiteralTextContent(" ")).formatted(separationColour));
+                        mutableText.append((Text.literal(String.valueOf(nbtList.charAt(m.start())))).formatted(separationColour));
+                        mutableText.append(Text.literal(" ").formatted(separationColour));
                         lastString = String.valueOf(nbtList.charAt(m.start()));
                         lastIndex = m.start();
                     }
@@ -165,17 +164,17 @@ public class TooltipChanger {
 
                         // Check if the string is way too long
                         if (m.start() - lineLimit > lineStep ){
-                            mutableText.append(MutableText.of(new LiteralTextContent("....")).formatted(lstringColour));
+                            mutableText.append(Text.literal("....").formatted(lstringColour));
                             removedCharters += m.start() - lineLimit;
                         }
                         else {
-                            mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()))).formatted(stringColour));
+                            mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
                         }
 
-                        mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start())))).formatted(quotationColour));
+                        mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
                     }
                     else {
-                        mutableText.append(MutableText.of(new LiteralTextContent(String.valueOf(nbtList.charAt(m.start())))).formatted(quotationColour));
+                        mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
                     }
                     lastString = String.valueOf(nbtList.charAt(m.start()));
                     lastIndex = m.start();
@@ -194,14 +193,14 @@ public class TooltipChanger {
                 if (nbtList.charAt(m.start()) == '}' || nbtList.charAt(m.start()) == ']' || nbtList.charAt(m.start()) == ',') { // 2).
 
                     if (lastString.equals("'")) { // 3).
-                        mutableText.append(MutableText.of(new LiteralTextContent(nbtList.substring(lastIndex+1,m.start()))).formatted(stringColour));
+                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
                         lastIndex = m.start();
                     }
 
                     // 4).
                     list.add(indexInsertLocation,mutableText);
                     indexInsertLocation += 1;
-                    mutableText = MutableText.of(new LiteralTextContent("     "));
+                    mutableText = Text.literal("     ");
                     lineAdded = Boolean.TRUE;
                     lineLimit = lineLimit + lineStep;
                 }
