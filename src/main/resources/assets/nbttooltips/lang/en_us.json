@@ -1,4 +1,4 @@
 {
   "nbttooltips.keybind": "Show NBT",
-  "item.nbt_tags.nbttooltips": "NBT: "
+  "item.nbt_tags.nbttooltips": "NBT: %s"
 }
