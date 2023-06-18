@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "nbttooltips",
-  "version": "0.1.4-1.19.x",
+  "version": "0.1.4-1.19.4",
 
   "name": "NBT tooltips",
   "description": "A simple fabric Minecraft mod that adds a feature that allows you to see the custom NBT data when you hover over it and press your shift key.",
