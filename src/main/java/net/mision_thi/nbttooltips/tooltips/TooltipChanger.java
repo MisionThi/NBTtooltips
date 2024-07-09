@@ -1,38 +1,34 @@
 package net.mision_thi.nbttooltips.tooltips;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.mision_thi.nbttooltips.config.ModConfigs;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TooltipChanger {
-    public static ArrayList<Text> Main(MinecraftClient client, ItemStack itemStack, ArrayList<Text> list) {
-        // Initialise the needed variables
-        ArrayList<Text> temp = new ArrayList<Text>();
+    public static List<Text> Main(ItemStack itemStack, List<Text> list) {
 
         /*
             Recreate the normal NBT text.
             With that NBT text recreated, we can find the index of the text.
             After we found it we remove it and keep the index stored in the `index` variable.
         */
-        temp.add(Text.translatable("item.nbt_tags", itemStack.getNbt().getKeys().size()).formatted(Formatting.DARK_GRAY));
-        int index = list.indexOf(temp.get(0));
-        int indexInsertLocation = list.indexOf(temp.get(0));
-        list.remove(index);
+        Text findText = Text.translatable("item.components", itemStack.getComponents().size()).formatted(Formatting.DARK_GRAY);
+        int index = list.indexOf(findText);
+        if (index == -1) index = Math.max(0, list.size() - 1);
+        else list.remove(index);
+        int indexInsertLocation = index;
 
         /*
             Get the NBT list that we want to show.
             And we set the symbols up where we look for, so we can detect what to give which color.
          */
-        String nbtList = String.valueOf(itemStack.getNbt());
+        String nbtList = String.valueOf(itemStack.getComponentChanges());
         Pattern p = Pattern.compile("[{}:\"\\[\\],']", Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(nbtList);
 
