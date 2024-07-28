@@ -25,30 +25,28 @@ public abstract class mision_thi_TooltipChanger {
 
 	@Shadow public abstract boolean isEmpty();
 
-	@Unique private boolean pressed = false;
+	@Unique private boolean shouldShow = false;
 
 	@Redirect(method = "getTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/tooltip/TooltipType;isCreative()Z"))
 	protected boolean forceVisible(TooltipType instance) {
 		int code = InputUtil.fromTranslationKey(NBTtooltipsMod.KEYBIND.getBoundKeyTranslationKey()).getCode();
-		pressed = InputUtil.isKeyPressed(client.getWindow().getHandle(), code);
-		return pressed || instance.isCreative();
+		shouldShow = instance.isAdvanced() && InputUtil.isKeyPressed(client.getWindow().getHandle(), code);
+		return shouldShow || instance.isCreative();
 	}
 
-	@Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
+	@Inject(method = "getTooltip", at = @At("RETURN"))
 	protected void injectEditTooltipmethod(Item.TooltipContext context, PlayerEntity player, TooltipType type, CallbackInfoReturnable<List<Text>> info) {
 
 		// If the advanced tooltips are on and the shift key is pressed the method is run.
-		if (type.isAdvanced() && pressed && !isEmpty()) {
-			// initialise the needed data
-			ItemStack itemStack = ( ItemStack ) ( Object ) this;
-			List<Text> list = info.getReturnValue();
+		if (shouldShow && !isEmpty()) {
+			ItemStack itemStack = (ItemStack) (Object) this;
 
 			/*
 				Before calling the main method from the `tooltip changer` class.
 				We check if the item even has custom NBT.
 			 */
 			if (!itemStack.getComponentChanges().isEmpty()) {
-				info.setReturnValue(TooltipChanger.Main(itemStack, list));
+				TooltipChanger.Main(itemStack, info.getReturnValue());
 			}
 
 		}

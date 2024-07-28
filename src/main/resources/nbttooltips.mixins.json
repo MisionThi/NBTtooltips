@@ -6,7 +6,8 @@
   "mixins": [
   ],
   "client": [
-    "mision_thi_TooltipChanger"
+    "mision_thi_TooltipChanger",
+    "MixinRegistryEntryReference"
   ],
   "injectors": {
     "defaultRequire": 1

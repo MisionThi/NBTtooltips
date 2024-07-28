@@ -1,17 +1,49 @@
 package net.mision_thi.nbttooltips.tooltips;
 
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.*;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.entry.RegistryEntryOwner;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.mision_thi.nbttooltips.config.ModConfigs;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
+
+import static net.mision_thi.nbttooltips.NBTtooltipsMod.client;
 
 public class TooltipChanger {
-    public static List<Text> Main(ItemStack itemStack, List<Text> list) {
+    /**
+     * implemented in mixins to make this equal to any owner. used by NBT_OPS_UNLIMITED
+     */
+    public static final RegistryEntryOwner<?> ALL_EQUALITY_OWNER = new RegistryEntryOwner<>() {
+        @Override
+        public boolean ownerEquals(RegistryEntryOwner<Object> other) {
+            return true;
+        }
+    };
+    /**
+     * for encoding unlimited data into NbtElement for getNBT methods
+     */
+    private static final RegistryOps<NbtElement> NBT_OPS_UNLIMITED = RegistryOps.of(NbtOps.INSTANCE, new RegistryOps.RegistryInfoGetter() {
+        private final RegistryOps.RegistryInfo<?> INFO = new RegistryOps.RegistryInfo<>(ALL_EQUALITY_OWNER, null, null);
+
+        @Override
+        public <T> Optional<RegistryOps.RegistryInfo<T>> getRegistryInfo(RegistryKey<? extends Registry<? extends T>> registryRef) {
+            //noinspection unchecked
+            return Optional.of((RegistryOps.RegistryInfo<T>) INFO);
+        }
+
+    });
+
+    public static void Main(ItemStack itemStack, List<Text> list) {
 
         /*
             Recreate the normal NBT text.
@@ -22,224 +54,296 @@ public class TooltipChanger {
         int index = list.indexOf(findText);
         if (index == -1) index = Math.max(0, list.size() - 1);
         else list.remove(index);
-        int indexInsertLocation = index;
 
-        /*
-            Get the NBT list that we want to show.
-            And we set the symbols up where we look for, so we can detect what to give which color.
-         */
-        String nbtList = String.valueOf(itemStack.getComponentChanges());
-        Pattern p = Pattern.compile("[{}:\"\\[\\],']", Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(nbtList);
-
-        // Create new literalText, which we will be adding to the list.
-        MutableText mutableText = Text.empty();
-        mutableText.append(Text.translatable("item.nbt_tags.nbttooltips").formatted(Formatting.DARK_GRAY));
-
-
-        /*  **Loop through the NBT data**
-         *
-         */
-        int lineStep = ModConfigs.LINE_LIMIT; // config
-        Formatting stringColour = Colour(ModConfigs.STRING_COLOUR);
-        Formatting quotationColour = Colour(ModConfigs.QUOTATION_COLOUR);
-        Formatting separationColour = Colour(ModConfigs.SEPARATION_COLOUR);
-        Formatting integerColour = Colour(ModConfigs.INTEGER_COLOUR);
-        Formatting typeColour = Colour(ModConfigs.TYPE_COLOUR);
-        Formatting fieldColour = Colour(ModConfigs.FIELD_COLOUR);
-        Formatting lstringColour = Colour(ModConfigs.LSTRING_COLOUR);
-
-        int lineLimit = lineStep;
-        int removedCharters = 0;
-        int lastIndex = 0;
-        Boolean singleQuotationMark = Boolean.FALSE;
-        Boolean lineAdded = Boolean.FALSE;
-        String lastString = "";
-
-
-        while (m.find()) {
-            lineAdded = Boolean.FALSE;
-
-            /*  **Checking for single quotation marks**
-             *  After that we check if the last char was a single quotation mark we can check that by checking the variable "singleQuotationMark".
-             *  We do this so the data between the single quotation marks will get the "stringColour".
-             *  And we make sure that the single quotation marks get the "quotationColour".
-             */
-            if (nbtList.charAt(m.start()) == '\'') {
-                if (singleQuotationMark.equals(Boolean.FALSE)) { // If false color only the quotation mark
-                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
-                    singleQuotationMark = Boolean.TRUE;
-                }
-                else { // Else color the quotation mark and make the rest green
-                    mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
-                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
-                    singleQuotationMark = Boolean.FALSE;
-                }
-                lastString = String.valueOf(nbtList.charAt(m.start()));
-                lastIndex = m.start();
-            }
-
-
-            /*  **Checking if the text is not between the single quotation mark**
-             *  1). When the text is not between the single quotation marks the normal formatting will get to work.
-             *  2). We check if the char that is found is an opening bracket.
-             *  3). The closing brackets and the comma (these are also the chars that decide when we go to the next line.).
-             *  4). Now we check for the colon.
-             *  5). And lastly we check for the double quotation marks.
-             */
-            if (singleQuotationMark == Boolean.FALSE) {
-
-                /*  2). We check if the char that is found is an opening bracket.
-                        Adds the found char and gives it the "separationColour"
-                        Stores the lastString and lastIndex
-                 */
-                if (nbtList.charAt(m.start()) == '{' || nbtList.charAt(m.start()) == '[' ) {
-                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(separationColour));
-                    lastString = String.valueOf(nbtList.charAt(m.start()));
-                    lastIndex = m.start();
-                }
-
-                /*  3). The closing brackets and the comma (these are also the chars that decide when we go to the next line.).
-                        If the char before the found char is a char that indicates what type of variable the text in front of it is.
-                            Then: Add the text before the char that indicates the type and give it the "integerColour".
-                                  After that add the char type and give it the "typeColour".
-                            Else: Give all the text in front of the count char the "integerColour".
-                        Now we add the found char with the "separationColour" (includes comma's)
-                        If the char was a comma add a space (this way it's more readable)
-                        Stores the lastString and lastIndex
-                 */
-                if (nbtList.charAt(m.start()) == '}' || nbtList.charAt(m.start()) == ']' || nbtList.charAt(m.start()) == ',') {
-                    if (nbtList.charAt(m.start()-1) == 's' || nbtList.charAt(m.start()-1) == 'S' ||
-                            nbtList.charAt(m.start()-1) == 'b' || nbtList.charAt(m.start()-1) == 'B' ||
-                            nbtList.charAt(m.start()-1) == 'l' || nbtList.charAt(m.start()-1) == 'L' ||
-                            nbtList.charAt(m.start()-1) == 'f' || nbtList.charAt(m.start()-1) == 'F'
-                    ) {
-                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start()-1)).formatted(integerColour));
-                        mutableText.append(Text.literal(nbtList.substring(m.start()-1,m.start())).formatted(typeColour));
-
-                    }
-                    else {
-                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(integerColour));
-                    }
-
-                    mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start())))).formatted(separationColour);
-
-                    if (nbtList.charAt(m.start()) == ',') { mutableText.append(Text.literal(" ").formatted(separationColour)); }
-                    lastString = String.valueOf(nbtList.charAt(m.start()));
-                    lastIndex = m.start();
-                }
-
-                /*  4). Now we check for the colon. (:)
-                        If the last string doesn't equal the double quotation mark. (when it is between it should only get the "stringColour")
-                            Then: Add the text in front of the colon and give it the "fieldColour".
-                                  Add the found char and give it the "separationColour".
-                                  Add a space so it's easier to read.
-                                  Stores the lastString and lastIndex
-
-                 */
-                if (nbtList.charAt(m.start()) == ':') { // 4).
-                    if (!lastString.equals("\"")) {
-                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(fieldColour));
-
-                        mutableText.append((Text.literal(String.valueOf(nbtList.charAt(m.start())))).formatted(separationColour));
-                        mutableText.append(Text.literal(" ").formatted(separationColour));
-                        lastString = String.valueOf(nbtList.charAt(m.start()));
-                        lastIndex = m.start();
-                    }
-
-                }
-                /*  5). And lastly we check for the double quotation marks.
-                        If the last char was a " too.
-                            Then: If the string between the columns is longer then the linesStep
-                                Then: Convert the string between the quotation marks to .... "lstringColour"
-                                      And add the removed chars to the "removeCharters" variable.
-                                Else: Add the string and give it the "stringColour"
-                            Else: Only add the " since it's the first one.
-                        Stores the lastString and lastIndex
-                 */
-                if (nbtList.charAt(m.start()) == '"') {
-                    if (lastString.equals("\"")){
-
-                        // Check if the string is way too long
-                        if (m.start() - lineLimit > lineStep ){
-                            mutableText.append(Text.literal("....").formatted(lstringColour));
-                            removedCharters += m.start() - lineLimit;
-                        }
-                        else {
-                            mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
-                        }
-
-                        mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
-                    }
-                    else {
-                        mutableText.append(Text.literal(String.valueOf(nbtList.charAt(m.start()))).formatted(quotationColour));
-                    }
-                    lastString = String.valueOf(nbtList.charAt(m.start()));
-                    lastIndex = m.start();
-
-                }
-            }
-
-
-            /*  **Checks if the current index is higher than the limit**
-             *  1). We check if the current index is higher than the current line limit.
-             *  2). We check if the found char is a closing bracket or comma, since we only go to the next line with those chars.
-             *  3). In there we check if we currently are in a single quotation mark area, if so we colour the first part "stringColour".
-             *  4). The last thing we do is adding the text to the list and making sure that we go to the next line
-             */
-            if (m.start() - removedCharters >= lineLimit) { // 1).
-                if (nbtList.charAt(m.start()) == '}' || nbtList.charAt(m.start()) == ']' || nbtList.charAt(m.start()) == ',') { // 2).
-
-                    if (lastString.equals("'")) { // 3).
-                        mutableText.append(Text.literal(nbtList.substring(lastIndex+1,m.start())).formatted(stringColour));
-                        lastIndex = m.start();
-                    }
-
-                    // 4).
-                    list.add(indexInsertLocation,mutableText);
-                    indexInsertLocation += 1;
-                    mutableText = Text.literal("     ");
-                    lineAdded = Boolean.TRUE;
-                    lineLimit = lineLimit + lineStep;
-                }
-            }
-        }
-
-        /*  Add the last line
-         *  If the line was added just before this.
-         *      Then: don't add to the list since otherwise we just add an empty line.
-         *      Else: we add the last part to the list too.
-         */
-        if (lineAdded.equals(Boolean.FALSE)) {
-            list.add(indexInsertLocation,mutableText);
-        }
-
-        /*  Return the final list
-
-         */
-        return list;
+        // build the nbt text
+        NbtTextBuilder builder = new NbtTextBuilder();
+        builder.append(Text.translatable("item.nbt_tags.nbttooltips").formatted(Formatting.DARK_GRAY));
+        builder.buildElement(ComponentChanges.CODEC.encodeStart(NBT_OPS_UNLIMITED, itemStack.getComponentChanges()).getOrThrow());
+        list.addAll(index, builder.build());
     }
 
-    private static Formatting Colour(String colour) {
+    /**
+     * @author aMelonRind
+     */
+    private static class NbtTextBuilder {
+        private static final Set<List<String>> textPaths = Set.of(
+                List.of("minecraft:custom_data", "display", "Name"),
+                List.of("minecraft:custom_data", "display", "Lore", "[]"),
+                List.of("minecraft:custom_name"),
+                List.of("minecraft:lore", "[]")
+        );
 
-        return switch (colour) {
-            case "black" -> Formatting.BLACK;
-            case "dark_blue" -> Formatting.DARK_BLUE;
-            case "dark_green" -> Formatting.DARK_GREEN;
-            case "dark_aqua" -> Formatting.DARK_AQUA;
-            case "dark_red" -> Formatting.DARK_RED;
-            case "dark_purple" -> Formatting.DARK_PURPLE;
-            case "gold" -> Formatting.GOLD;
-            case "gray" -> Formatting.GRAY;
-            case "dark_gray" -> Formatting.DARK_GRAY;
-            case "blue" -> Formatting.BLUE;
-            case "green" -> Formatting.GREEN;
-            case "aqua" -> Formatting.AQUA;
-            case "red" -> Formatting.RED;
-            case "light_purple" -> Formatting.LIGHT_PURPLE;
-            case "yellow" -> Formatting.YELLOW;
-            default -> Formatting.WHITE;
-        };
+        private final int SPACE_WIDTH = client.textRenderer.getWidth(" ");
+        // config
+        private final int lineStep = Math.min(ModConfigs.LINE_LIMIT * 6, client.getWindow().getScaledWidth() - 80);
+        private final Formatting stringColour = colour(ModConfigs.STRING_COLOUR);
+        private final Formatting quotationColour = colour(ModConfigs.QUOTATION_COLOUR);
+        private final Formatting separationColour = colour(ModConfigs.SEPARATION_COLOUR);
+        private final Formatting integerColour = colour(ModConfigs.INTEGER_COLOUR);
+        private final Formatting typeColour = colour(ModConfigs.TYPE_COLOUR);
+        private final Formatting fieldColour = colour(ModConfigs.FIELD_COLOUR);
+        private final Formatting lstringColour = colour(ModConfigs.LSTRING_COLOUR);
+
+        private final Text SINGLE_QUOTE = Text.literal("'").formatted(quotationColour);
+        private final Text DOUBLE_QUOTE = Text.literal("\"").formatted(quotationColour);
+        private final Text LSTRING = Text.empty().append(DOUBLE_QUOTE).append(Text.literal("....").formatted(lstringColour)).append(DOUBLE_QUOTE);
+
+        private final Text INDENT = Text.literal("     ");
+        private final Text SPACE = Text.literal(" ").formatted(separationColour);
+        private final Text BRACKET_START = Text.literal("{").formatted(separationColour);
+        private final Text BRACKET_END = Text.literal("}").formatted(separationColour);
+        private final Text SQUARE_BRACKET_START = Text.literal("[").formatted(separationColour);
+        private final Text SQUARE_BRACKET_END = Text.literal("]").formatted(separationColour);
+        private final Text SEPARATOR = Text.literal(",").formatted(separationColour);
+        private final Text COLON = Text.literal(":").formatted(separationColour);
+        private final Text SEMICOLON = Text.literal(";").formatted(separationColour);
+
+        private final Text BYTE = Text.literal("b").formatted(typeColour);
+        private final Text SHORT = Text.literal("s").formatted(typeColour);
+        private final Text INTEGER = Text.literal("I").formatted(typeColour);
+        private final Text LONG = Text.literal("L").formatted(typeColour);
+        private final Text FLOAT = Text.literal("f").formatted(typeColour);
+
+        private final Stack<String> stack = new Stack<>();
+        private final List<List<Text>> list = new ArrayList<>();
+        private List<Text> currentLine; // should always be list[-1]
+        private int column = 0;
+        private boolean doSpace = false;
+        private boolean ignoreNextSeparator = false;
+        @Nullable
+        private List<Text> groups = null;
+
+        @Contract(pure = true)
+        private static Formatting colour(@NotNull String colour) {
+            return switch (colour) {
+                case "black" -> Formatting.BLACK;
+                case "dark_blue" -> Formatting.DARK_BLUE;
+                case "dark_green" -> Formatting.DARK_GREEN;
+                case "dark_aqua" -> Formatting.DARK_AQUA;
+                case "dark_red" -> Formatting.DARK_RED;
+                case "dark_purple" -> Formatting.DARK_PURPLE;
+                case "gold" -> Formatting.GOLD;
+                case "gray" -> Formatting.GRAY;
+                case "dark_gray" -> Formatting.DARK_GRAY;
+                case "blue" -> Formatting.BLUE;
+                case "green" -> Formatting.GREEN;
+                case "aqua" -> Formatting.AQUA;
+                case "red" -> Formatting.RED;
+                case "light_purple" -> Formatting.LIGHT_PURPLE;
+                case "yellow" -> Formatting.YELLOW;
+                default -> Formatting.WHITE;
+            };
+        }
+
+        private static @NotNull Text joinTexts(@NotNull List<Text> texts) {
+            MutableText text = Text.empty();
+            for (Text sub : texts) text.append(sub);
+            return text;
+        }
+
+        private NbtTextBuilder() {
+            nextLine();
+        }
+
+        private void nextLine() {
+            list.add(currentLine = new ArrayList<>());
+            column = 0;
+        }
+
+        private void groupStart() {
+            groups = new ArrayList<>();
+        }
+
+        private void groupEnd() {
+            if (groups != null) {
+                Text text = joinTexts(groups);
+                groups = null;
+                append(text);
+            }
+        }
+
+        private NbtTextBuilder appendNoLineBreak(Text text) {
+            return append(text, false);
+        }
+
+        private NbtTextBuilder append(Text text) {
+            return append(text, true);
+        }
+
+        private NbtTextBuilder append(Text text, boolean checkLineBreak) {
+            if (groups != null) {
+                groups.add(text);
+                return this;
+            }
+            int length = client.textRenderer.getWidth(text);
+            if (checkLineBreak && column + (doSpace ? SPACE_WIDTH : 0) + length >= lineStep) {
+                nextLine();
+                currentLine.add(INDENT);
+            }
+            if (doSpace) {
+                if (column != 0) {
+                    currentLine.add(SPACE);
+                    column += SPACE_WIDTH;
+                }
+                doSpace = false;
+            }
+            currentLine.add(text);
+            column += length;
+            return this;
+        }
+
+        private NbtTextBuilder appendRaw(String str, Formatting format) {
+            return append(Text.literal(str).formatted(format));
+        }
+
+        private void appendField(String str) {
+            appendRaw(str, fieldColour).appendNoLineBreak(COLON).space();
+        }
+
+        private void arrayHeader(Text type) {
+            appendNoLineBreak(SQUARE_BRACKET_START)
+                    .appendNoLineBreak(type)
+                    .appendNoLineBreak(SEMICOLON)
+                    .space()
+                    .ignoreNextSeparator();
+        }
+
+        private void appendString(String str) {
+            str = NbtString.escape(str);
+            if (client.textRenderer.getWidth(str) >= lineStep) append(LSTRING);
+            else {
+                Text quote = str.charAt(0) == '\'' ? SINGLE_QUOTE : DOUBLE_QUOTE;
+                append(Text.empty()
+                        .append(quote)
+                        .append(Text.literal(str.substring(1, str.length() - 1)).formatted(stringColour))
+                        .append(quote)
+                );
+            }
+        }
+
+        private NbtTextBuilder space() {
+            if (groups == null) {
+                doSpace = true;
+            } else {
+                groups.add(SPACE);
+            }
+            return this;
+        }
+
+        private void ignoreNextSeparator() {
+            ignoreNextSeparator = true;
+        }
+
+        private NbtTextBuilder separator() {
+            if (ignoreNextSeparator) {
+                ignoreNextSeparator = false;
+                return this;
+            }
+            return appendNoLineBreak(SEPARATOR).space();
+        }
+
+        private void appendNumber(String str) {
+            append(Text.literal(str).formatted(integerColour));
+        }
+
+        private void appendNumber(String str, Text unit) {
+            append(Text.empty().append(str).formatted(integerColour).append(unit));
+        }
+
+        private void append(byte num) {
+            appendNumber(Byte.toString(num), BYTE);
+        }
+
+        private void append(short num) {
+            appendNumber(Short.toString(num), SHORT);
+        }
+
+        private void append(int num) {
+            appendNumber(Integer.toString(num));
+        }
+
+        private void append(long num) {
+            appendNumber(Long.toString(num), LONG);
+        }
+
+        private void append(float num) {
+            appendNumber(Float.toString(num), FLOAT);
+        }
+
+        private void append(double num) {
+            appendNumber(Double.toString(num));
+        }
+
+        public void buildElement(NbtElement element) {
+            if (element == null) {
+                appendRaw("null", typeColour);
+                return;
+            }
+            switch (element.getType()) {
+                case NbtElement.BYTE_TYPE -> append(((NbtByte) element).byteValue());
+                case NbtElement.SHORT_TYPE -> append(((NbtShort) element).shortValue());
+                case NbtElement.INT_TYPE -> append(((NbtInt) element).intValue());
+                case NbtElement.LONG_TYPE -> append(((NbtLong) element).longValue());
+                case NbtElement.FLOAT_TYPE -> append(((NbtFloat) element).floatValue());
+                case NbtElement.DOUBLE_TYPE -> append(((NbtDouble) element).doubleValue());
+                case NbtElement.NUMBER_TYPE -> appendNumber(((AbstractNbtNumber) element).numberValue().toString());
+                case NbtElement.STRING_TYPE -> appendString(textPaths.contains(stack)
+                        ? element.asString().replaceAll("(?<=[,{])\"(?:bold|italic|underlined|strikethrough|obfuscated)\":false,", "").replaceAll(",\"underlined\":false(?=})", "")
+                        : element.asString());
+                case NbtElement.COMPOUND_TYPE -> {
+                    NbtCompound compound = (NbtCompound) element;
+                    appendNoLineBreak(BRACKET_START).ignoreNextSeparator();
+                    for (String key : compound.getKeys()) {
+                        NbtElement e = compound.get(key);
+                        separator();
+                        if (e instanceof AbstractNbtNumber) groupStart();
+                        appendField(key.replaceFirst("^minecraft:", "mc:"));
+                        stack.push(key);
+                        buildElement(e);
+                        stack.pop();
+                        groupEnd();
+                    }
+                    append(BRACKET_END);
+                }
+                case NbtElement.LIST_TYPE -> {
+                    appendNoLineBreak(SQUARE_BRACKET_START).ignoreNextSeparator();
+                    stack.push("[]");
+                    for (NbtElement e : (NbtList) element) {
+                        separator().buildElement(e);
+                    }
+                    stack.pop();
+                    append(SQUARE_BRACKET_END);
+                }
+                case NbtElement.BYTE_ARRAY_TYPE -> {
+                    arrayHeader(BYTE);
+                    for (NbtByte e : (NbtByteArray) element) {
+                        separator().append(e.byteValue());
+                    }
+                    append(SQUARE_BRACKET_END);
+                }
+                case NbtElement.INT_ARRAY_TYPE -> {
+                    arrayHeader(INTEGER);
+                    for (NbtInt e : (NbtIntArray) element) {
+                        separator().append(e.intValue());
+                    }
+                    append(SQUARE_BRACKET_END);
+                }
+                case NbtElement.LONG_ARRAY_TYPE -> {
+                    arrayHeader(LONG);
+                    for (NbtLong e : (NbtLongArray) element) {
+                        separator().append(e.longValue());
+                    }
+                    append(SQUARE_BRACKET_END);
+                }
+                case NbtElement.END_TYPE -> appendRaw("end", typeColour);
+                default -> appendRaw(element.asString(), Formatting.RED);
+            }
+        }
+
+        public List<Text> build() {
+            return list.stream().map(NbtTextBuilder::joinTexts).toList();
+        }
+
     }
 
 }
