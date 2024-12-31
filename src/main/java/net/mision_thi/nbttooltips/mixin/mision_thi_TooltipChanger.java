@@ -29,7 +29,7 @@ public abstract class mision_thi_TooltipChanger {
 
 	@Redirect(method = "getTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/tooltip/TooltipType;isCreative()Z"))
 	protected boolean forceVisible(TooltipType instance) {
-		int code = InputUtil.fromTranslationKey(NBTtooltipsMod.KEYBIND.getBoundKeyTranslationKey()).getCode();
+		int code = InputUtil.fromTranslationKey(NBTtooltipsMod.SHOW_NBT_KEYBIND.getBoundKeyTranslationKey()).getCode();
 		shouldShow = instance.isAdvanced() && InputUtil.isKeyPressed(client.getWindow().getHandle(), code);
 		return shouldShow || instance.isCreative();
 	}
@@ -37,10 +37,10 @@ public abstract class mision_thi_TooltipChanger {
 	@Inject(method = "getTooltip", at = @At("RETURN"))
 	protected void injectEditTooltipmethod(Item.TooltipContext context, PlayerEntity player, TooltipType type, CallbackInfoReturnable<List<Text>> info) {
 
+		ItemStack itemStack = (ItemStack) (Object) this;
+
 		// If the advanced tooltips are on and the shift key is pressed the method is run.
 		if (shouldShow && !isEmpty()) {
-			ItemStack itemStack = (ItemStack) (Object) this;
-
 			/*
 				Before calling the main method from the `tooltip changer` class.
 				We check if the item even has custom NBT.
@@ -48,7 +48,11 @@ public abstract class mision_thi_TooltipChanger {
 			if (!itemStack.getComponentChanges().isEmpty()) {
 				TooltipChanger.Main(itemStack, info.getReturnValue());
 			}
+		}
 
+		int code = InputUtil.fromTranslationKey(NBTtooltipsMod.COPY_NBT_KEYBIND.getBoundKeyTranslationKey()).getCode();
+		if (InputUtil.isKeyPressed(client.getWindow().getHandle(), code)) {
+			client.keyboard.setClipboard(TooltipChanger.getNbtElement(itemStack).asString());
 		}
 	}
 }

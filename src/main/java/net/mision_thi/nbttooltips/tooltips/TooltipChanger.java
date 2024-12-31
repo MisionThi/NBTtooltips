@@ -58,8 +58,12 @@ public class TooltipChanger {
         // build the nbt text
         NbtTextBuilder builder = new NbtTextBuilder();
         builder.append(Text.translatable("item.nbt_tags.nbttooltips").formatted(Formatting.DARK_GRAY));
-        builder.buildElement(ComponentChanges.CODEC.encodeStart(NBT_OPS_UNLIMITED, itemStack.getComponentChanges()).getOrThrow());
+        builder.buildElement(getNbtElement(itemStack));
         list.addAll(index, builder.build());
+    }
+
+    public static NbtElement getNbtElement(ItemStack itemStack) {
+        return ComponentChanges.CODEC.encodeStart(NBT_OPS_UNLIMITED, itemStack.getComponentChanges()).getOrThrow();
     }
 
     /**

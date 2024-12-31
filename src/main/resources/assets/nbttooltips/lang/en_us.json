@@ -1,4 +1,5 @@
 {
-  "nbttooltips.keybind": "Show NBT",
+  "nbttooltips.keybind.show": "Show NBT",
+  "nbttooltips.keybind.copy": "Copy NBT",
   "item.nbt_tags.nbttooltips": "NBT: "
 }
